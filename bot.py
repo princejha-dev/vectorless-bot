@@ -1,6 +1,8 @@
 import telebot
 from src.client import BOT_TOKEN
 from src.rag import ask_question
+from src.chat_api import ask_chat_api
+from src.client import DOC_ID
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -22,7 +24,9 @@ def handle_question(message):
     # Show "typing..." while processing
     bot.send_chat_action(message.chat.id, "typing")
 
-    answer = ask_question(message.text)
+   # answer = ask_chat_api(message.text,DOC_ID)
+    answer=ask_question(message.text)
+
     bot.reply_to(message, answer, parse_mode="Markdown")
 
 

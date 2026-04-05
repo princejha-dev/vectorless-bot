@@ -1,17 +1,19 @@
 import json
 import time
-from src.client import pi_client, gemini_client, DOC_ID
+from src.client import pi_client, groq_client, DOC_ID
 
 
-def gemini_generate(prompt: str) -> str:
+def generate_answer(prompt: str) -> str:
     """Call Gemini with retry for rate limits."""
     for attempt in range(3):
         try:
-            response = gemini_client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=prompt,
+            response = groq_client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
             )
-            return response.text
+            return response.choices[0].message.content
         except Exception as e:
             if "429" in str(e) and attempt < 2:
                 print(f"⏳ Rate limited, retrying in 25s... (attempt {attempt + 1})")
@@ -34,7 +36,7 @@ def get_tree():
 
 # ── Step 2: LLM Tree Search — Gemini picks relevant nodes ───────────────────
 def llm_tree_search(query: str, tree: list) -> list:
-    """Send query + tree to Gemini, get back relevant node_ids."""
+    """Send query + tree to Groq, get back relevant node_ids."""
 
     def compress(nodes):
         out = []
@@ -65,7 +67,7 @@ Reply ONLY in this exact JSON format:
   "node_list": ["node_id1", "node_id2"]
 }}"""
 
-    text = gemini_generate(prompt).strip()
+    text = generate_answer(prompt).strip()
     # Remove markdown code fences if present
     if text.startswith("```"):
         text = text.split("\n", 1)[1]
