@@ -1,9 +1,10 @@
+import time
 from src.client import pi_client
 
-pdf_path="./artificial_intelligence_tutorial.pdf"
+pdf_path = "./ACADEMIC REGULATIONS 2025.pdf"
 
-document=pi_client.submit_document(pdf_path)
-doc_id=document['doc_id']
+document = pi_client.submit_document(pdf_path)
+doc_id = document['doc_id']
 
 print(f"doc id of the document is {doc_id}")
 

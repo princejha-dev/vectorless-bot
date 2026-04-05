@@ -3,8 +3,8 @@ import time
 from src.client import pi_client, groq_client, DOC_ID
 
 
-def generate_answer(prompt: str) -> str:
-    """Call Gemini with retry for rate limits."""
+def llm_generate(prompt: str) -> str:
+    """Call Groq LLM with retry for rate limits."""
     for attempt in range(3):
         try:
             response = groq_client.chat.completions.create(
@@ -34,7 +34,7 @@ def get_tree():
     return _tree_cache
 
 
-# ── Step 2: LLM Tree Search — Gemini picks relevant nodes ───────────────────
+# ── Step 2: LLM Tree Search — picks relevant nodes ──────────────────────────
 def llm_tree_search(query: str, tree: list) -> list:
     """Send query + tree to Groq, get back relevant node_ids."""
 
@@ -52,11 +52,11 @@ def llm_tree_search(query: str, tree: list) -> list:
             out.append(entry)
         return out
 
-    prompt = f"""You are given a query and a document's tree structure (like a Table of Contents).
-Your task: identify which node IDs most likely contain the answer to the query.
-Think step-by-step about which sections are relevant.
+    prompt = f"""You are a student academic assistant. You are given a student's query and the tree structure of the Academic Regulations 2025 document.
+Your task: identify which node IDs most likely contain the answer to the student's query.
+Think step-by-step about which sections/regulations are relevant.
 
-Query: {query}
+Student Query: {query}
 
 Document Tree:
 {json.dumps(compress(tree), indent=2)}
@@ -67,7 +67,7 @@ Reply ONLY in this exact JSON format:
   "node_list": ["node_id1", "node_id2"]
 }}"""
 
-    text = generate_answer(prompt).strip()
+    text = llm_generate(prompt).strip()
     # Remove markdown code fences if present
     if text.startswith("```"):
         text = text.split("\n", 1)[1]
@@ -89,11 +89,11 @@ def find_nodes_by_ids(tree: list, target_ids: list) -> list:
     return found
 
 
-# ── Step 4: Generate answer using Gemini ─────────────────────────────────────
+# ── Step 4: Generate answer using retrieved context ──────────────────────────
 def generate_answer(query: str, nodes: list) -> str:
     """Takes retrieved nodes as context and generates a grounded answer."""
     if not nodes:
-        return "⚠️ No relevant sections found in the document."
+        return "⚠️ No relevant sections found in the Academic Regulations."
 
     # Build context from retrieved nodes
     context_parts = []
@@ -104,19 +104,19 @@ def generate_answer(query: str, nodes: list) -> str:
         )
     context = "\n\n---\n\n".join(context_parts)
 
-    prompt = f"""You are an expert document analyst.
-Answer the question using ONLY the provided context.
-For every claim you make, cite the section title and page number in parentheses.
-Be concise and precise.
+    prompt = f"""You are a helpful student academic assistant specializing in Academic Regulations 2025.
+Answer the student's question using ONLY the provided context from the regulations document.
+For every claim, cite the section title and page number in parentheses.
+Be clear, concise, and student-friendly. If the answer involves steps or procedures, use numbered lists.
 
-Question: {query}
+Student Question: {query}
 
-Context:
+Context from Academic Regulations:
 {context}
 
 Answer:"""
 
-    return gemini_generate(prompt)
+    return llm_generate(prompt)
 
 
 # ── Main function: Full RAG Pipeline ─────────────────────────────────────────
