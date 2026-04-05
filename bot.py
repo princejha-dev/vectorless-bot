@@ -27,8 +27,8 @@ def send_welcome(message):
         "Ask me anything about academic rules, policies, "
         "grading, attendance, exams, and more!\n\n"
         "Use /mode to choose how I answer:\n"
-        "• *RAG* — Groq LLM + document tree search (detailed)\n"
-        "• *Chat API* — PageIndex direct answer (fast)\n\n"
+        "• *RAG* — Groq LLM + document tree search (fast)\n"
+        "• *Chat API* — PageIndex direct answer (detailed)\n\n"
         "Just type your question and send!",
         parse_mode="Markdown",
     )
@@ -39,11 +39,11 @@ def send_welcome(message):
 def choose_mode(message):
     markup = InlineKeyboardMarkup()
     markup.row(
-        InlineKeyboardButton("🤖 RAG (Detailed)", callback_data="mode_rag"),
-        InlineKeyboardButton("⚡ Chat API (Fast)", callback_data="mode_chat_api"),
+        InlineKeyboardButton("🤖 RAG (Fast)", callback_data="mode_rag"),
+        InlineKeyboardButton("⚡ Chat API (Detailed)", callback_data="mode_chat_api"),
     )
     current = user_mode.get(message.chat.id, "rag")
-    label = "RAG (Detailed)" if current == "rag" else "Chat API (Fast)"
+    label = "RAG (Fast)" if current == "rag" else "Chat API (Detailed)"
     bot.reply_to(
         message,
         f"Current mode: *{label}*\n\nChoose your answer mode:",
@@ -58,7 +58,7 @@ def handle_mode_callback(call):
         user_mode[call.message.chat.id] = "rag"
         bot.answer_callback_query(call.id, "✅ Switched to RAG mode")
         bot.edit_message_text(
-            "✅ Mode set to *RAG (Detailed)*\n\nSend me your question!",
+            "✅ Mode set to *RAG (Fast)*\n\nSend me your question!",
             call.message.chat.id,
             call.message.message_id,
             parse_mode="Markdown",
@@ -67,7 +67,7 @@ def handle_mode_callback(call):
         user_mode[call.message.chat.id] = "chat_api"
         bot.answer_callback_query(call.id, "✅ Switched to Chat API mode")
         bot.edit_message_text(
-            "✅ Mode set to *Chat API (Fast)*\n\nSend me your question!",
+            "✅ Mode set to *Chat API (Detailed)*\n\nSend me your question!",
             call.message.chat.id,
             call.message.message_id,
             parse_mode="Markdown",
