@@ -1,6 +1,7 @@
 import json
 import time
 from src.client import pi_client, groq_client, DOC_ID
+from src.lang import Langobj
 
 
 def llm_generate(prompt: str) -> str:
@@ -90,8 +91,15 @@ def find_nodes_by_ids(tree: list, target_ids: list) -> list:
 
 
 # ── Step 4: Generate answer using retrieved context ──────────────────────────
-def generate_answer(query: str, nodes: list) -> str:
-    """Takes retrieved nodes as context and generates a grounded answer."""
+def generate_answer(original_query: str, translated_query: str, nodes: list, answer_instructions: str) -> str:
+    """Takes original and translated queries with retrieved context and generates a grounded answer.
+    
+    Args:
+        original_query: Student's question in their original language (preserves tone & context)
+        translated_query: Question translated to English (used for document retrieval context)
+        nodes: Retrieved relevant document sections
+        answer_instructions: Language and style instructions for the response
+    """
     if not nodes:
         return "⚠️ No relevant sections found in the Academic Regulations."
 
@@ -105,16 +113,27 @@ def generate_answer(query: str, nodes: list) -> str:
     context = "\n\n---\n\n".join(context_parts)
 
     prompt = f"""You are a helpful student academic assistant specializing in Academic Regulations 2025.
-Answer the student's question using ONLY the provided context from the regulations document.
-For every claim, cite the section title and page number in parentheses.
-Be clear, concise, and student-friendly. If the answer involves steps or procedures, use numbered lists.
 
-Student Question: {query}
+📋 CONTEXT & INSTRUCTIONS:
+- Answer the student's question using ONLY the provided context from the regulations document.
+- For every claim, cite the section title and page number in parentheses.
+- Be clear, concise, and student-friendly.
+- If the answer involves steps or procedures, use numbered lists.
+- Preserve the original tone and intent of the student's question.
 
-Context from Academic Regulations:
+🌐 LANGUAGE INSTRUCTION:
+{answer_instructions}
+
+❓ STUDENT'S ORIGINAL QUESTION (in their language):
+{original_query}
+
+🔍 QUESTION IN ENGLISH (used to find relevant sections):
+{translated_query}
+
+📚 CONTEXT FROM ACADEMIC REGULATIONS:
 {context}
 
-Answer:"""
+✍️ ANSWER (in the language specified above, reflecting the original question's tone):"""
 
     return llm_generate(prompt)
 
@@ -129,9 +148,13 @@ def ask_question(question: str) -> str:
     """
     try:
         tree = get_tree()
-        node_ids = llm_tree_search(question, tree)
+        lang = Langobj.detect_lang(question)
+        question_en = Langobj.translate_to_english(question) if lang!="en" else question
+        answer_intruction = Langobj.get_language_instructions(lang)
+        node_ids = llm_tree_search(question_en, tree)
         nodes = find_nodes_by_ids(tree, node_ids)
-        answer = generate_answer(question, nodes)
+        # Pass both original (user's language) and translated (English) queries
+        answer = generate_answer(question, question_en, nodes, answer_intruction)
         return answer
     except Exception as e:
         return f"❌ Error: {str(e)}"
